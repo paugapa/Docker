@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  apache:
+    build:
+      context: .
+      dockerfile: Dockerfile.apache
+    # Eliminamos container_name para que Docker use el nombre de la carpeta y evite conflictos
+    ports:
+      - "8080:80"
+    volumes:
+      - ./html:/var/www/html
+    networks:
+      - mi_red_docker
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:latest
+    # Eliminamos container_name para mayor flexibilidad
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: mi_base_de_datos
+      MYSQL_USER: usuario_db
+      MYSQL_PASSWORD: password_db
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - mi_red_docker
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  mi_red_docker:
+    driver: bridge
